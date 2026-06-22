@@ -1,4 +1,4 @@
-# Estimation en Áreas Pequeñas de la Edad al Primer Hijo en Colombia
+# Estimación en Áreas Pequeñas de la Edad al Primer Hijo en Colombia
 
 Implementación de modelos clásicos, espaciales y bayesianos para la estimación de áreas pequeñas utilizando información de la Encuesta Nacional de Demografía y Salud (ENDS/DHS).
 
