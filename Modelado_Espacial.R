@@ -520,6 +520,22 @@ df_predicciones_SARf <- df_predicciones_SARf %>%
   mutate(edad_real = exp(pred_log))
 
 
+# re-organización de niveles para visualización
+df_predicciones_SARf$ethnic_rec <- fct_relevel(
+  df_predicciones_SARf$ethnic_rec,
+  "otros", "indigena", "blanco/mestizo", "afro"
+)
+
+df_predicciones_SARf$type_area <- fct_relevel(
+  df_predicciones_SARf$type_area, "urbana", "rural"
+)
+
+df_predicciones_SARf$high_edu <- fct_relevel(
+  df_predicciones_SARf$high_edu, 
+  "superior", "secundaria",  "primaria", "sin educación"
+)
+
+
 ### Mapa de calor - combinaciones de variables ###
 ggplot(df_predicciones_SARf, aes(x = cohort_quinquenal, y = high_edu, fill = edad_real)) +
   
