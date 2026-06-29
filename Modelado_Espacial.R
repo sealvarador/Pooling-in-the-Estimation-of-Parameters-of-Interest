@@ -468,14 +468,14 @@ p2 <- ggplot(SAR_pesos, aes(x = Peso_Propio,
 mse_sar <- mod_SARf$mse
 
 # Cálculo del CV
-cv_sar <- sqrt(mse_sar) / est_sar
+RSE_log_sar <- sqrt(mse_sar) / abs(est_sar)
 
 
 resultados_estratos_SARf <- strata_obs %>%
   mutate(
     edad_estimada = est_sar,
     error_estandar = sqrt(mse_sar),
-    CV = cv_sar * 100
+    RSE_log = RSE_log_sar * 100
   )
 
 resultados_estratos_SARf <- resultados_estratos_SARf %>%
@@ -484,11 +484,11 @@ resultados_estratos_SARf <- resultados_estratos_SARf %>%
   mutate(order_n = row_number())
 
 
-ggplot(resultados_estratos_SARf, aes(x = order_n, y = CV)) +
+ggplot(resultados_estratos_SARf, aes(x = order_n, y = RSE_log)) +
   geom_point() +
   geom_hline(yintercept = 5, color = "red", linetype = "dashed") +
-  labs(title = "Coeficientes de Variación por Estrato", 
-       x = "Estratos (ordenados por tamaño)", y = "CV (%)") +
+  labs(title = "Error Relativo Estándar por Estrato", 
+       x = "Estratos (ordenados por tamaño)", y = "RSE (%)") +
   theme(axis.text.x = element_text(size = 0),
         axis.title.y = element_text(size = 16)
   )
@@ -530,7 +530,7 @@ ggplot(df_predicciones_SARf, aes(x = cohort_quinquenal, y = high_edu, fill = eda
   
   scale_fill_gradientn(
     colours = grunge_fun(100),
-    name = "Edad \nprimer \nHijo",
+    name = "Edad \nPrimer \nHijo",
     limits = c(min(df_predicciones_SARf$edad_real),
                max(df_predicciones_SARf$edad_real)),
     oob = scales::squish
@@ -561,7 +561,7 @@ ggplot(df_plot_SARf) +
              alpha = 0.6,      
              size = 5) +     
   labs(x = "Estratos (ordenados por tamaño)",
-       y = "Media de Edad Estimada") +
+       y = "Mediana de Edad Estimada") +
   theme(
     axis.text.x = element_text(size = 14),  
     axis.text.y = element_text(size = 14),  
@@ -655,8 +655,23 @@ abline(h = 0, col = "red", lwd = 2, lty = 2)
 
 
 ### Cálculo del factor de encogimiento ###
-# se usa la misma C <- I_mat - rho_est * W_est del SAR frecuentista
 # cálculo de los pesos asegurando que sumen 1 exactamente
+# G = A * [(I - rho*W_est)' * (I - rho*W_est)]^-1
+
+C <- I_mat - rho_est * W_est
+G <- A_est * solve(t(C) %*% C)                                                  #Matriz de covarianza espacial 
+
+
+# Matriz de varianza de muestreo (Psi) y varianza total (Sigma)
+psi <- diag(datos_modelo$vardir)                                                #Varianzas directas conocidas 
+Sigma <- G + psi                                                                #Varianza total del modelo
+
+
+# construcción de la Matriz de Pesos EBLUP 
+# K = G * Sigma^-1
+K <- G %*% solve(Sigma)
+
+
 
 SAR_pesos_bay <- data.frame(
   n_i = strata_obs$n_h,                                                         #Tamaño de muestra por área
@@ -677,7 +692,7 @@ SAR_pesos_bay <- data.frame(
   )
 
 # incorporar la conectividad geográfica con W estandarizada
-SAR_pesos_bay$num_vecinos <- rowSums(W_est)
+SAR_pesos_bay$num_vecinos <- rowSums(W)
 
 # Clasificación de conectividad, los facets según la cantidad de vecinos
 SAR_pesos_bay <- SAR_pesos_bay %>%
@@ -742,44 +757,21 @@ resultados_SARhb <- resultados_SARhb %>%
   dplyr::select(stratum_id, strata, n_h, y_h, var_h, mu_EBP, mu_PSE) 
 
 
-resultados_SARhb$mu_CV <- (resultados_SARhb$mu_PSE / resultados_SARhb$mu_EBP) * 100
+resultados_SARhb$mu_RSE_log <- (resultados_SARhb$mu_PSE / abs(resultados_SARhb$mu_EBP)) * 100
 
 resultados_SARhb <- resultados_SARhb %>% 
   arrange(n_h) %>%              
   mutate(order_n = row_number())
 
 
-ggplot(resultados_SARhb, aes(x = order_n, y = mu_CV)) +
+ggplot(resultados_SARhb, aes(x = order_n, y = mu_RSE_log)) +
   geom_point() +
   geom_hline(yintercept = 5, color = "red", linetype = "dashed") +
-  labs(title = "Coeficientes de Variación por Estrato", 
-       x = "Estratos (ordenados por tamaño)", y = "CV (%)") +
+  labs(title = "Error Relativo Estándar por Estrato", 
+       x = "Estratos (ordenados por tamaño)", y = "RSE (%)") +
   theme(axis.text.x = element_text(size = 0),
         axis.title.y = element_text(size = 16)
   )
-
-
-### Criterios de Información ###
-# Construcción de la matriz de covarianza espacial G
-# G = varianza_u * inv((I_mat - rho*W_est)' * (I_mat - rho*W_est))
-G_espacial <- diag(varianza_u) * solve(t(C) %*% C)
-stopifnot(isSymmetric(solve(t(C) %*% C)))
-
-# Matriz de covarianza total V
-V_total <- G_espacial + psi
-stopifnot(isSymmetric(G_espacial))
-stopifnot(isSymmetric(psi))
-
-
-# cálculo de la Log-Verosimilitud Marginal
-# se usa la parte fija como la media
-log_lik_marginal <- dmvnorm(datos_modelo$y_log, 
-                            mean = as.vector(pred_fija), 
-                            sigma = V_total, 
-                            log = TRUE)
-
-devianza_marginal <- -2 * log_lik_marginal
-
 
 
 ##### Visualización de medias #####
@@ -813,7 +805,7 @@ ggplot(df_predicciones_SARhb, aes(x = cohort_quinquenal, y = high_edu, fill = ed
   
   scale_fill_gradientn(
     colours = grunge_fun(100),
-    name = "Edad \nprimer \nHijo",
+    name = "Edad \nPrimer \nHijo",
     limits = c(min(df_predicciones_SARhb$edad_real),
                max(df_predicciones_SARhb$edad_real)),
     oob = scales::squish
@@ -846,7 +838,7 @@ ggplot(df_plot_SARhb) +
              alpha = 0.6,      
              size = 5) +     
   labs(x = "Estratos (ordenados por tamaño)",
-       y = "Media de Edad Estimada") +
+       y = "Mediana de Edad Estimada") +
   theme(
     axis.text.x = element_text(size = 14),  
     axis.text.y = element_text(size = 14),  
