@@ -561,6 +561,22 @@ df_predicciones_ss <- strata_obs
 df_predicciones_ss$edad_esc_real <- exp(y_ebp_ss)  #edad en escala real/original
 
 
+# re-organización de niveles para visualización
+df_predicciones_ss$ethnic_rec <- fct_relevel(
+  df_predicciones_ss$ethnic_rec,
+  "otros", "indigena", "blanco/mestizo", "afro"
+)
+
+df_predicciones_ss$type_area <- fct_relevel(
+  df_predicciones_ss$type_area, "urbana", "rural"
+)
+
+df_predicciones_ss$high_edu <- fct_relevel(
+  df_predicciones_ss$high_edu, 
+  "superior", "secundaria",  "primaria", "sin educación"
+)
+
+
 ggplot(df_predicciones_ss, aes(x = cohort_quinquenal, y = high_edu, fill = edad_esc_real)) +
   
   geom_tile(color = "white") +
@@ -814,6 +830,22 @@ df_predicciones_bhf$pred_log <- est.bhf
 # donde eta_hat corresponde al predictor EBLUP obtenido en escala logarítmica.
 df_predicciones_bhf <- df_predicciones_bhf %>%
   mutate(edad_real = exp(pred_log))
+
+
+# re-organización de niveles para visualización
+df_predicciones_bhf$ethnic_rec <- fct_relevel(
+  df_predicciones_bhf$ethnic_rec,
+  "otros", "indigena", "blanco/mestizo", "afro"
+)
+
+df_predicciones_bhf$type_area <- fct_relevel(
+  df_predicciones_bhf$type_area, "urbana", "rural"
+)
+
+df_predicciones_bhf$high_edu <- fct_relevel(
+  df_predicciones_bhf$high_edu, 
+  "superior", "secundaria",  "primaria", "sin educación"
+)
 
 
 ### Mapa de calor - combinaciones de variables ###
