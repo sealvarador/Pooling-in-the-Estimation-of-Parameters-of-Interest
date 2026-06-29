@@ -31,12 +31,12 @@ library(ggplot2)
 
 df_areas$type_area <- factor(
   df_areas$type_area,
-  levels = c("urbana", "rural")
+  levels = c("rural", "urbana")
 )
 
 df_areas$high_edu <- factor(
   df_areas$high_edu,
-  levels = c("superior", "secundaria", "primaria", "sin educación")
+  levels = c("sin educación", "primaria", "secundaria", "superior")
 )
 
 df_areas$ethnic_rec <- factor(
