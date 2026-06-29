@@ -320,6 +320,22 @@ fh_predicciones <- fh_predicciones %>%
   mutate(edad_real = exp(pred_log))
 
 
+# re-organización de niveles para visualización
+fh_predicciones$ethnic_rec <- fct_relevel(
+  fh_predicciones$ethnic_rec,
+  "otros", "indigena", "blanco/mestizo", "afro"
+)
+
+fh_predicciones$type_area <- fct_relevel(
+  fh_predicciones$type_area, "urbana", "rural"
+)
+
+fh_predicciones$high_edu <- fct_relevel(
+  fh_predicciones$high_edu, 
+  "superior", "secundaria",  "primaria", "sin educación"
+)
+
+
 ### Mapa de calor - combinaciones de variables ###
 ggplot(fh_predicciones, aes(x = cohort_quinquenal, y = high_edu, fill = edad_real)) +
   
@@ -559,6 +575,23 @@ df_predicciones_ner$pred_log <- modelo_ner$est
 
 df_predicciones_ner <- df_predicciones_ner %>%
   mutate(edad_real = exp(pred_log))
+
+
+# re-organización de niveles para visualización
+df_predicciones_ner$ethnic_rec <- fct_relevel(
+  df_predicciones_ner$ethnic_rec,
+  "otros", "indigena", "blanco/mestizo", "afro"
+)
+
+df_predicciones_ner$type_area <- fct_relevel(
+  df_predicciones_ner$type_area, "urbana", "rural"
+)
+
+df_predicciones_ner$high_edu <- fct_relevel(
+  df_predicciones_ner$high_edu, 
+  "superior", "secundaria",  "primaria", "sin educación"
+)
+
 
 
 ### Mapa de calor - combinaciones de variables ###
